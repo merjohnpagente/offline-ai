@@ -65,7 +65,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     // Best-effort final save. The lifecycle callback normally gets here first.
     final conversation = _conversation;
     if (conversation != null) {
-      unawaited(_repo.saveDraft(conversation.id, _input.text));
+      _saveDraftQuietly(conversation.id, _input.text);
     }
     _snapshotStreaming();
 
@@ -84,7 +84,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       _draftTimer?.cancel();
       final conversation = _conversation;
       if (conversation != null) {
-        unawaited(_repo.saveDraft(conversation.id, _input.text));
+        _saveDraftQuietly(conversation.id, _input.text);
       }
       _snapshotStreaming();
     }
@@ -233,10 +233,20 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     });
     _setInputText('');
     _scrollToBottom();
-    unawaited(_repo.saveDraft(conversation.id, ''));
+    _saveDraftQuietly(conversation.id, '');
 
     final generation = ++_generation;
-    await _repo.saveMessage(conversation.id, user, title: title);
+    try {
+      await _repo.saveMessage(conversation.id, user, title: title);
+    } catch (error) {
+      if (_disposed) return;
+      setState(() {
+        _sending = false;
+        _error = 'Could not save this message locally: $error';
+        _messages.removeWhere((message) => message.id == assistant.id);
+      });
+      return;
+    }
     if (_disposed ||
         generation != _generation ||
         _conversation?.id != conversation.id) {
@@ -248,38 +258,42 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         .where((message) => message.content.trim().isNotEmpty)
         .toList(growable: false);
 
-    _subscription = widget.ai
-        .streamReply(
-          history: history,
-          temperature: settings.temperature,
-          maxTokens: settings.maxTokens,
-        )
-        .listen(
-          (chunk) {
-            if (_disposed || generation != _generation) return;
-            final index = _messages.indexWhere(
-              (message) => message.id == assistant.id,
-            );
-            if (index == -1) return;
-            setState(() {
-              _messages[index] = _messages[index].copyWith(
-                content: _messages[index].content + chunk,
-                isStreaming: true,
+    try {
+      _subscription = widget.ai
+          .streamReply(
+            history: history,
+            temperature: settings.temperature,
+            maxTokens: settings.maxTokens,
+          )
+          .listen(
+            (chunk) {
+              if (_disposed || generation != _generation) return;
+              final index = _messages.indexWhere(
+                (message) => message.id == assistant.id,
               );
-            });
-            _scheduleSnapshot(assistant.id, generation);
-            _scrollToBottom();
-          },
-          onError: (Object error) {
-            if (_disposed || generation != _generation) return;
-            unawaited(_finishStream(assistant.id, error: error));
-          },
-          onDone: () {
-            if (_disposed || generation != _generation) return;
-            unawaited(_finishStream(assistant.id));
-          },
-          cancelOnError: true,
-        );
+              if (index == -1) return;
+              setState(() {
+                _messages[index] = _messages[index].copyWith(
+                  content: _messages[index].content + chunk,
+                  isStreaming: true,
+                );
+              });
+              _scheduleSnapshot(assistant.id, generation);
+              _scrollToBottom();
+            },
+            onError: (Object error) {
+              if (_disposed || generation != _generation) return;
+              unawaited(_finishStream(assistant.id, error: error));
+            },
+            onDone: () {
+              if (_disposed || generation != _generation) return;
+              unawaited(_finishStream(assistant.id));
+            },
+            cancelOnError: true,
+          );
+    } catch (error) {
+      unawaited(_finishStream(assistant.id, error: error));
+    }
   }
 
   Future<void> _finishStream(String assistantId, {Object? error}) async {
@@ -309,7 +323,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     if (conversation != null &&
         messageToSave != null &&
         messageToSave.content.trim().isNotEmpty) {
-      await _repo.saveMessage(conversation.id, messageToSave, touch: true);
+      try {
+        await _repo.saveMessage(conversation.id, messageToSave, touch: true);
+      } catch (error) {
+        if (mounted) {
+          setState(() => _error = 'Could not save the reply locally: $error');
+        }
+      }
     }
     await _refreshConversations();
     _scrollToBottom();
@@ -348,7 +368,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     }
 
     if (message.content.trim().isEmpty) return;
-    await _repo.saveMessage(conversation.id, message, touch: touch);
+    try {
+      await _repo.saveMessage(conversation.id, message, touch: touch);
+    } catch (error) {
+      if (mounted) {
+        setState(() => _error = 'Could not save the reply locally: $error');
+      }
+    }
   }
 
   /// Saves the partial reply without changing the streaming UI state.
@@ -359,7 +385,32 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     if (index == -1) return;
     final message = _messages[index];
     if (message.content.trim().isEmpty) return;
-    unawaited(_repo.saveMessage(conversation.id, message, touch: false));
+    _saveQuietly(conversation.id, message);
+  }
+
+  /// Best-effort write used for streaming snapshots and lifecycle saves.
+  void _saveQuietly(
+    String conversationId,
+    ChatMessage message, {
+    bool touch = false,
+  }) {
+    unawaited(() async {
+      try {
+        await _repo.saveMessage(conversationId, message, touch: touch);
+      } catch (_) {
+        // A deleted conversation or a full disk must not crash the UI.
+      }
+    }());
+  }
+
+  void _saveDraftQuietly(String conversationId, String text) {
+    unawaited(() async {
+      try {
+        await _repo.saveDraft(conversationId, text);
+      } catch (_) {
+        // Draft saving is best effort; the in-memory text is still intact.
+      }
+    }());
   }
 
   void _scheduleSnapshot(String assistantId, int generation) {
@@ -374,7 +425,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       if (index == -1) return;
       final message = _messages[index];
       if (message.content.trim().isEmpty) return;
-      unawaited(_repo.saveMessage(conversation.id, message, touch: false));
+      _saveQuietly(conversation.id, message);
     });
   }
 
@@ -385,7 +436,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final text = _input.text;
     _draftTimer?.cancel();
     _draftTimer = Timer(const Duration(milliseconds: 350), () {
-      unawaited(_repo.saveDraft(conversation.id, text));
+      _saveDraftQuietly(conversation.id, text);
     });
   }
 
@@ -402,13 +453,21 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _draftTimer?.cancel();
     final conversation = _conversation;
     if (conversation == null) return;
-    await _repo.saveDraft(conversation.id, _input.text);
+    try {
+      await _repo.saveDraft(conversation.id, _input.text);
+    } catch (_) {
+      // Switching chats should still work if a draft write fails.
+    }
   }
 
   Future<void> _refreshConversations() async {
-    final conversations = await _repo.listConversations();
-    if (_disposed) return;
-    setState(() => _conversations = conversations);
+    try {
+      final conversations = await _repo.listConversations();
+      if (_disposed) return;
+      setState(() => _conversations = conversations);
+    } catch (_) {
+      // Keep the last known list; the chat itself is still usable.
+    }
   }
 
   Future<void> _deleteConversation(Conversation conversation) async {

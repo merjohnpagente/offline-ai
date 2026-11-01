@@ -6,6 +6,18 @@ build has no `INTERNET` permission. A small FastAPI gateway is included for
 desktop use and for pointing OpenAI-compatible clients (OpenCode, Continue,
 etc.) at the same local model.
 
+## Download
+
+Get the latest **arm64** APK from the
+[latest release](https://github.com/merjohnpagente/offline-ai/releases/latest).
+The APK is debug-signed for sideloading (not Play Store distribution), bundles
+the model, and needs roughly 1.3 GB of free space. Android 7.0+ on a 64-bit ARM
+device is required.
+
+Pushing to `main` runs the `Build Android APK` workflow, which downloads and
+verifies the model, runs the analyzer and tests, builds the arm64 APK, and
+publishes it to the `latest` release.
+
 ## Architecture
 
 ```
@@ -25,6 +37,7 @@ Desktop / editor clients
 | `offline-coding-assistant/tools/` | One-time model download helpers (`fetch_model.ps1` / `fetch_model.sh`). |
 | `training/` | Pinned requirements for fine-tuning the model with Unsloth on a Colab T4 or local NVIDIA GPU. |
 | `eval/` | `eval_compare.py` plus held-out tasks, comparing a base model against a fine-tuned one. |
+| `.github/workflows/` | CI that builds and publishes the arm64 APK to the `latest` release. |
 
 ## Flutter app
 

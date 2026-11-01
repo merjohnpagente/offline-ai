@@ -1,0 +1,87 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install SQLite for the repository tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsqlite3-dev
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.8"
+          channel: stable
+          cache: true
+
+      - name: Download and verify the bundled model
+        run: bash offline-coding-assistant/tools/fetch_model.sh
+
+      - name: Install Flutter dependencies
+        working-directory: offline-coding-assistant/flutter_app
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: offline-coding-assistant/flutter_app
+        run: flutter analyze
+
+      - name: Test
+        working-directory: offline-coding-assistant/flutter_app
+        run: flutter test
+
+      - name: Build release APK (arm64)
+        working-directory: offline-coding-assistant/flutter_app
+        run: flutter build apk --release --target-platform android-arm64
+
+      - name: Prepare APK
+        run: |
+          mkdir -p dist
+          cp offline-coding-assistant/flutter_app/build/app/outputs/flutter-apk/app-release.apk dist/offline-ai-arm64.apk
+          ls -lh dist/offline-ai-arm64.apk
+
+      - name: Publish the latest APK
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view latest >/dev/null 2>&1; then
+            gh release create latest \
+              --title "Offline AI - latest APK" \
+              --notes "Built from ${GITHUB_SHA}."
+          fi
+          gh release upload latest dist/offline-ai-arm64.apk --clobber
+          gh release edit latest \
+            --title "Offline AI - latest APK" \
+            --notes "Built from ${GITHUB_SHA} on $(date -u +%Y-%m-%dT%H:%M:%SZ)."
+
+      - name: Write download link to the job summary
+        run: |
+          {
+            echo "## APK ready"
+            echo ""
+            echo "Download the arm64 APK from the [latest release](https://github.com/${GITHUB_REPOSITORY}/releases/latest)."
+          } >> "$GITHUB_STEP_SUMMARY"

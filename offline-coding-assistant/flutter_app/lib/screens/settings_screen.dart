@@ -77,11 +77,10 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Chats, messages, drafts, attachments, and settings are '
-                    'saved in a private SQLite database inside this app. '
-                    'Closing or restarting the app does not erase them, and '
-                    'nothing is uploaded. Uninstalling the app removes the '
-                    'local data.',
+                    'Chats, messages, drafts, and settings are saved in a '
+                    'private SQLite database inside this app. Closing or '
+                    'restarting the app does not erase them, and nothing is '
+                    'uploaded. Uninstalling the app removes the local data.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                       height: 1.45,

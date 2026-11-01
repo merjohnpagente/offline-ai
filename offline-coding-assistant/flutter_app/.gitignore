@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# The GGUF is downloaded and verified during the build, not committed.
+/assets/models/*.gguf

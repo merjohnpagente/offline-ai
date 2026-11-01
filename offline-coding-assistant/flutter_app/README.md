@@ -1,17 +1,17 @@
-# offline_ai_chat
+# Offline AI — Flutter app
 
-A new Flutter project.
+This folder contains the on-device Android app. See the [root README](../README.md) for the full description, download link, and build instructions.
 
-## Getting Started
+Quick start:
 
-This project is a starting point for a Flutter application.
+```bash
+bash ../tools/fetch_model.sh
+flutter pub get
+flutter analyze
+flutter test
+flutter build apk --release --target-platform android-arm64
+```
 
-A few resources to get you started if this is your first Flutter project:
+The model is **not** committed to Git. The helper downloads the official Apache-2.0 Qwen2.5-Coder-1.5B-Instruct Q4_K_M GGUF (~1.1 GB) into `assets/models/model.gguf` and verifies its SHA-256. GitHub Actions does the same before building.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Chats, drafts, and settings are stored locally in SQLite. The release app has no `INTERNET` permission.
