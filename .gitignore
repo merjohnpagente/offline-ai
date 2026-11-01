@@ -1,0 +1,68 @@
+# --- Model weights (large, never commit) ---
+*.gguf
+*.safetensors
+**/models/*.bin
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# --- Flutter / Dart ---
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+.pub-cache/
+.pub/
+coverage/
+*.iml
+.idea/
+.vscode/
+
+# --- Android ---
+.gradle/
+local.properties
+captures/
+*.jks
+*.keystore
+key.properties
+android/app/debug
+android/app/profile
+android/app/release
+GeneratedPluginRegistrant.java
+
+# --- iOS / macOS ---
+**/Pods/
+**/.symlinks/
+**/DerivedData/
+**/xcuserdata/
+Flutter/Generated.xcconfig
+Flutter/flutter_export_environment.sh
+Flutter/ephemeral/
+**/.generated/
+
+# --- Windows / Visual Studio ---
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+x64/
+x86/
+*.[Cc]ache
+!*.[Cc]ache/
+
+# --- OS / editors / logs ---
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+*.swp

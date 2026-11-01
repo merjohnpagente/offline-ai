@@ -1,0 +1,19 @@
+# Free Google Colab T4 / local NVIDIA GPU training environment.
+# Python 3.12 is recommended. Do NOT pip-install torch on Colab: Colab already
+# provides the correct CUDA build, and replacing it with PyPI torch often
+# installs a CPU-only wheel.
+#
+# Install with:
+#   python -m pip install --upgrade pip==26.1.2
+#   python -m pip install -r requirements-train.txt
+#
+# These pins satisfy Unsloth 2026.10.11's documented constraints.
+unsloth[colab-new]==2026.10.11
+unsloth_zoo==2026.10.11
+transformers==4.57.6
+trl==1.15.0
+peft==0.21.2
+datasets==4.8.5
+accelerate==1.15.0
+bitsandbytes==0.50.2
+sentencepiece==0.2.1

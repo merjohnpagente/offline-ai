@@ -1,0 +1,28 @@
+name: offline_ai_chat
+description: A fully on-device coding chat app. The GGUF model is bundled with the app and runs locally with llama.cpp; no server and no internet permission.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: 1.0.8
+  flutter_markdown_plus: 1.0.12
+  llamadart: 0.17.2
+  path: 1.9.1
+  path_provider: 2.1.6
+  provider: 6.1.5+1
+  sqflite: 2.4.4+2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: 6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/models/
