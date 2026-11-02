@@ -16,7 +16,7 @@ class ModelInstaller {
   static const String assetPath = 'assets/models/model.gguf';
   static const String fileName = 'model.gguf';
 
-  /// A real Q4_K_M 1.5B model is ~1.1 GB. This rejects an empty placeholder.
+  /// A real Q4_K_M 0.5B model is ~470 MB. This rejects an empty placeholder.
   static const int minimumBytes = 100 * 1024 * 1024;
 
   Future<String> ensureModel({void Function(String status)? onStatus}) async {
@@ -56,7 +56,7 @@ class ModelInstaller {
       throw Exception(
         'The bundled model is missing. Put your GGUF at '
         'flutter_app/assets/models/model.gguf and rebuild. '
-        'Run tools/fetch_model.ps1 for the default Qwen2.5-Coder-1.5B model.',
+        'Run tools/fetch_model.ps1 for the default Qwen2.5-Coder-0.5B model.',
       );
     }
 

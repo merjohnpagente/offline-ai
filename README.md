@@ -11,8 +11,8 @@ etc.) at the same local model.
 Get the latest **arm64** APK from the
 [latest release](https://github.com/merjohnpagente/offline-ai/releases/latest).
 The APK is debug-signed for sideloading (not Play Store distribution), bundles
-the model, and needs roughly 1.3 GB of free space. Android 7.0+ on a 64-bit ARM
-device is required.
+the model, downloads at about 600 MB, and needs roughly 1.2 GB of free space.
+Android 7.0+ on a 64-bit ARM device is required.
 
 Pushing to `main` runs the `Build Android APK` workflow, which downloads and
 verifies the model, runs the analyzer and tests, builds the arm64 APK, and
@@ -45,7 +45,7 @@ Desktop / editor clients
 cd offline-coding-assistant/flutter_app
 flutter pub get
 
-# One-time: download the default Qwen2.5-Coder-1.5B-Instruct Q4_K_M (~1.1 GB)
+# One-time: download the default Qwen2.5-Coder-0.5B-Instruct Q4_K_M (~470 MB)
 powershell -ExecutionPolicy Bypass -File ../tools/fetch_model.ps1   # Windows
 bash ../tools/fetch_model.sh                                        # macOS/Linux
 
