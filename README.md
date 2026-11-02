@@ -57,6 +57,11 @@ app-private storage through a `MethodChannel`, so the file is never loaded into
 Dart memory in one piece. Chats, drafts, and settings live in `offline_ai.db`
 inside the app sandbox.
 
+Use the paperclip button in the composer to attach a text or code file. The
+first 6 KB are added to the prompt while the attachment stays active; larger
+files are truncated. Files are read through the system picker, never uploaded,
+and never written to the database.
+
 To ship your own fine-tune, replace `assets/models/model.gguf` and rebuild:
 
 ```bash

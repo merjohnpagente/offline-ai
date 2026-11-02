@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: 1.0.8
+  file_selector: ^1.1.0
   flutter_markdown_plus: 1.0.12
   llamadart: 0.17.2
   path: 1.9.1

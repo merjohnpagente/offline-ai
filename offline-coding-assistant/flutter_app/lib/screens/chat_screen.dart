@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:provider/provider.dart';
 
+import '../models/attached_file.dart';
 import '../models/chat_message.dart';
 import '../models/conversation.dart';
 import '../services/chat_repository.dart';
+import '../services/file_attachment_service.dart';
 import '../services/local_ai_service.dart';
 import '../services/settings_service.dart';
 import '../utils/id.dart';
@@ -38,6 +40,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   int _nextSequence = 0;
   int _generation = 0;
   bool _sending = false;
+  AttachedFile? _attachment;
+  bool _pickingFile = false;
   bool _loadingHistory = true;
   bool _disposed = false;
   bool _suppressDraftSave = false;
@@ -157,6 +161,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         ..clear()
         ..addAll(messages);
       _nextSequence = messages.isEmpty ? 0 : messages.last.sequence + 1;
+      _attachment = null;
       _error = null;
       _loadingHistory = false;
     });
@@ -171,6 +176,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     await _flushDraft();
 
     if (_messages.isEmpty) {
+      if (_attachment != null) {
+        setState(() => _attachment = null);
+      }
       _scaffoldKey.currentState?.closeDrawer();
       return;
     }
@@ -183,6 +191,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       _messages.clear();
       _nextSequence = 0;
       _sending = false;
+      _attachment = null;
       _error = null;
       _loadingHistory = false;
     });
@@ -193,9 +202,15 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _send() async {
-    final text = _input.text.trim();
+    final typed = _input.text.trim();
+    final attachment = _attachment;
     final conversation = _conversation;
-    if (text.isEmpty || _sending || conversation == null) return;
+    if ((typed.isEmpty && attachment == null) ||
+        _sending ||
+        conversation == null) {
+      return;
+    }
+    final text = typed.isEmpty ? 'Explain this file.' : typed;
 
     final settings = context.read<SettingsService>();
     final isFirstMessage = _messages.isEmpty;
@@ -264,6 +279,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             history: history,
             temperature: settings.temperature,
             maxTokens: settings.maxTokens,
+            attachment: attachment,
           )
           .listen(
             (chunk) {
@@ -293,6 +309,29 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           );
     } catch (error) {
       unawaited(_finishStream(assistant.id, error: error));
+    }
+  }
+
+  Future<void> _pickAttachment() async {
+    if (_sending || _pickingFile) return;
+    setState(() => _pickingFile = true);
+    try {
+      final file = await FileAttachmentService().pick();
+      if (!mounted) return;
+      if (file != null) {
+        setState(() {
+          _attachment = file;
+          _error = null;
+        });
+      }
+    } on FormatException catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.message);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = 'Could not attach that file: $error');
+    } finally {
+      if (mounted) setState(() => _pickingFile = false);
     }
   }
 
@@ -583,6 +622,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       _messages.clear();
       _nextSequence = 0;
       _sending = false;
+      _attachment = null;
       _error = null;
       _loadingHistory = false;
     });
@@ -724,6 +764,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               sending: _sending,
               onSend: _send,
               onStop: _stop,
+              attachment: _attachment,
+              pickingFile: _pickingFile,
+              onAttach: _pickAttachment,
+              onRemoveAttachment: () => setState(() => _attachment = null),
             ),
           ],
         ),
@@ -1032,6 +1076,10 @@ class _Composer extends StatelessWidget {
     required this.sending,
     required this.onSend,
     required this.onStop,
+    required this.attachment,
+    required this.pickingFile,
+    required this.onAttach,
+    required this.onRemoveAttachment,
   });
 
   final TextEditingController controller;
@@ -1039,6 +1087,10 @@ class _Composer extends StatelessWidget {
   final bool sending;
   final VoidCallback onSend;
   final VoidCallback onStop;
+  final AttachedFile? attachment;
+  final bool pickingFile;
+  final VoidCallback onAttach;
+  final VoidCallback onRemoveAttachment;
 
   @override
   Widget build(BuildContext context) {
@@ -1051,37 +1103,120 @@ class _Composer extends StatelessWidget {
           top: BorderSide(color: theme.colorScheme.outlineVariant),
         ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              focusNode: focusNode,
-              minLines: 1,
-              maxLines: 5,
-              textInputAction: TextInputAction.newline,
-              keyboardType: TextInputType.multiline,
-              decoration: InputDecoration(
-                hintText: 'Ask about your code…',
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  borderSide: BorderSide.none,
+          if (attachment != null) ...[
+            _AttachmentChip(
+              file: attachment!,
+              onRemove: onRemoveAttachment,
+            ),
+            const SizedBox(height: 8),
+          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              IconButton(
+                tooltip: 'Attach a text or code file',
+                onPressed: sending || pickingFile ? null : onAttach,
+                icon: pickingFile
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.attach_file),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  minLines: 1,
+                  maxLines: 5,
+                  textInputAction: TextInputAction.newline,
+                  keyboardType: TextInputType.multiline,
+                  decoration: InputDecoration(
+                    hintText: 'Ask about your code…',
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerHighest,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                tooltip: sending ? 'Stop' : 'Send',
+                onPressed: sending ? onStop : onSend,
+                icon: Icon(sending ? Icons.stop : Icons.send),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AttachmentChip extends StatelessWidget {
+  const _AttachmentChip({required this.file, required this.onRemove});
+
+  final AttachedFile file;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.description_outlined,
+            size: 18,
+            color: theme.colorScheme.primary,
           ),
           const SizedBox(width: 8),
-          IconButton.filled(
-            tooltip: sending ? 'Stop' : 'Send',
-            onPressed: sending ? onStop : onSend,
-            icon: Icon(sending ? Icons.stop : Icons.send),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  file.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelLarge,
+                ),
+                Text(
+                  file.truncated
+                      ? '${file.sizeLabel} · first '
+                            '${FileAttachmentService.maxBytes ~/ 1024} KB attached'
+                      : '${file.sizeLabel} · attached',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Remove attachment',
+            visualDensity: VisualDensity.compact,
+            onPressed: onRemove,
+            icon: const Icon(Icons.close, size: 18),
           ),
         ],
       ),
