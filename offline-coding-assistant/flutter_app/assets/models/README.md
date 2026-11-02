@@ -7,7 +7,7 @@ model.gguf
 ```
 
 The default helper downloads the official Apache-2.0
-`Qwen2.5-Coder-0.5B-Instruct` Q4_K_M model (about 470 MB):
+`Qwen2.5-Coder-1.5B-Instruct` Q4_K_M model (about 1.1 GB):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools/fetch_model.ps1

@@ -6,8 +6,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_DIR="$ROOT/flutter_app/assets/models"
 OUT="$OUT_DIR/model.gguf"
-URL="https://huggingface.co/Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/resolve/main/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf?download=true"
-EXPECTED="1d9614638d18024d0fbb36575a15f1302a3adf044df10345688ec4f6e1c4ff32"
+URL="https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF/resolve/main/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf?download=true"
+EXPECTED="cc324af070c2ecbfd324a30884d2f951a7ff756aba85cb811a6ec436933bb046"
 
 mkdir -p "$OUT_DIR"
 
@@ -25,7 +25,7 @@ if [ -f "$OUT" ]; then
   rm -f "$OUT"
 fi
 
-echo "Downloading Qwen2.5-Coder-0.5B-Instruct Q4_K_M (~470 MB)..."
+echo "Downloading Qwen2.5-Coder-1.5B-Instruct Q4_K_M (~1.1 GB)..."
 curl -L --fail --retry 3 -o "$OUT" "$URL"
 
 if command -v sha256sum >/dev/null 2>&1; then

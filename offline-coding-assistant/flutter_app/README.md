@@ -12,7 +12,7 @@ flutter test
 flutter build apk --release --target-platform android-arm64
 ```
 
-The model is **not** committed to Git. The helper downloads the official Apache-2.0 Qwen2.5-Coder-0.5B-Instruct Q4_K_M GGUF (~470 MB) into `assets/models/model.gguf` and verifies its SHA-256. GitHub Actions does the same before building.
+The model is **not** committed to Git. The helper downloads the official Apache-2.0 Qwen2.5-Coder-1.5B-Instruct Q4_K_M GGUF (~1.1 GB) into `assets/models/model.gguf` and verifies its SHA-256. GitHub Actions does the same before building.
 
 Chats, drafts, and settings are stored locally in SQLite. The release app has no `INTERNET` permission.
 
