@@ -2,6 +2,7 @@ package com.example.offline_ai_chat
 
 import android.os.Handler
 import android.os.Looper
+import io.flutter.FlutterInjector
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -34,7 +35,10 @@ class MainActivity : FlutterActivity() {
                         destination.parentFile?.mkdirs()
                         if (destination.exists()) destination.delete()
 
-                        applicationContext.assets.open(assetName).use { input ->
+                        val lookupKey =
+                            FlutterInjector.instance().flutterLoader()
+                                .getLookupKeyForAsset(assetName)
+                        applicationContext.assets.open(lookupKey).use { input ->
                             FileOutputStream(destination).use { output ->
                                 val buffer = ByteArray(1024 * 1024)
                                 while (true) {
