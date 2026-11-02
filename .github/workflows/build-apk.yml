@@ -64,7 +64,16 @@ jobs:
           cp offline-coding-assistant/flutter_app/build/app/outputs/flutter-apk/app-release.apk dist/offline-ai-arm64.apk
           ls -lh dist/offline-ai-arm64.apk
 
-      - name: Publish the latest APK
+      - name: Package APK as ZIP
+        run: |
+          cd dist
+          # The APK is already a ZIP archive and most of its weight is the
+          # quantized GGUF model, so the ZIP will be roughly the same size.
+          # -9 still squeezes the few compressible parts.
+          zip -9 offline-ai-arm64.zip offline-ai-arm64.apk
+          ls -lh offline-ai-arm64.zip
+
+      - name: Publish the latest APK and ZIP
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -73,15 +82,21 @@ jobs:
               --title "Offline AI - latest APK" \
               --notes "Built from ${GITHUB_SHA}."
           fi
-          gh release upload latest dist/offline-ai-arm64.apk --clobber
+          gh release upload latest \
+            dist/offline-ai-arm64.apk \
+            dist/offline-ai-arm64.zip \
+            --clobber
           gh release edit latest \
             --title "Offline AI - latest APK" \
             --notes "Built from ${GITHUB_SHA} on $(date -u +%Y-%m-%dT%H:%M:%SZ)."
 
-      - name: Write download link to the job summary
+      - name: Write download links to the job summary
         run: |
           {
             echo "## APK ready"
             echo ""
-            echo "Download the arm64 APK from the [latest release](https://github.com/${GITHUB_REPOSITORY}/releases/latest)."
+            echo "Download the arm64 APK or ZIP from the [latest release](https://github.com/${GITHUB_REPOSITORY}/releases/latest)."
+            echo ""
+            echo "- \`offline-ai-arm64.apk\`"
+            echo "- \`offline-ai-arm64.zip\` (same APK, zipped)"
           } >> "$GITHUB_STEP_SUMMARY"
