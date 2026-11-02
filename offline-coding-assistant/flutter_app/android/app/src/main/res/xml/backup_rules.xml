@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Keep the chat database eligible for Android backup/transfer, but never back
-  up the 1.1 GB GGUF stored under files/models/. The model is copied from the
+  up the 470 MB GGUF stored under files/models/. The model is copied from the
   APK again on a fresh install.
 -->
 <full-backup-content>

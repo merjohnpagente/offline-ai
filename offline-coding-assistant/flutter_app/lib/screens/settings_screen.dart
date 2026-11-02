@@ -43,7 +43,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Qwen2.5-Coder 1.5B · Q4_K_M · llama.cpp\n'
+                    'Qwen2.5-Coder 0.5B · Q4_K_M · llama.cpp\n'
                     'The model is bundled with the app. This app has no '
                     'internet permission and never calls a server.',
                     style: theme.textTheme.bodySmall?.copyWith(
