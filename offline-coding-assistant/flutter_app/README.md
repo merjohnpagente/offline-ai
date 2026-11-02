@@ -1,4 +1,4 @@
-# Offline AI — Flutter app
+# JAI — Flutter app
 
 This folder contains the on-device Android app. See the [root README](../README.md) for the full description, download link, and build instructions.
 

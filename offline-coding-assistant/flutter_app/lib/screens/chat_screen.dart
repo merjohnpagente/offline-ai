@@ -684,7 +684,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         if (open) unawaited(_refreshConversations());
       },
       appBar: AppBar(
-        title: const Text('Offline AI'),
+        title: const Text('JAI'),
         actions: [
           IconButton(
             tooltip: 'New chat',

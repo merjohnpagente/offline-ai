@@ -73,7 +73,7 @@ class OfflineAiApp extends StatelessWidget {
   Widget build(BuildContext context) {
     const seed = Color(0xFF3F6B5B);
     return MaterialApp(
-      title: 'Offline AI',
+      title: 'JAI',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.system,
       theme: ThemeData(
@@ -203,7 +203,7 @@ class _BootstrapScreenState extends State<BootstrapScreen> {
 
     if (_error != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Offline AI')),
+        appBar: AppBar(title: const Text('JAI')),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),

@@ -1,4 +1,4 @@
-# Offline AI
+# JAI
 
 A fully on-device coding assistant. A Flutter chat app runs a quantized GGUF
 model with llama.cpp on the phone — no server, no API key, and the Android
